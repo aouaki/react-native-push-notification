@@ -75,7 +75,7 @@ Notifications.configure = function(options: Object) {
 
 		var tempFirstNotification = this.callNative( 'popInitialNotification' );
 
-		if ( tempFirstNotification !== null ) {
+		if ( tempFirstNotification ) {
 			this._onNotification(tempFirstNotification, true);
 		}
 
