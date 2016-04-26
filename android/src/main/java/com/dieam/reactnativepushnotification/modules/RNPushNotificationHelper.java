@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -45,14 +46,26 @@ public class RNPushNotificationHelper {
         Resources res = mApplication.getResources();
         String packageName = mApplication.getPackageName();
 
+        String title = bundle.getString("title");
+        if (title == null) {
+            ApplicationInfo appInfo = mContext.getApplicationInfo();
+            title = mContext.getPackageManager().getApplicationLabel(appInfo).toString();
+        }
+
         NotificationCompat.Builder notification = new NotificationCompat.Builder(mContext)
-                .setContentTitle(bundle.getString("title"))
-                .setContentText(bundle.getString("message"))
+                .setContentTitle(title)
                 .setTicker(bundle.getString("ticker"))
                 .setCategory(NotificationCompat.CATEGORY_CALL)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
+
+        if (bundle.getString("message") != null) {
+            notification.setContentText(bundle.getString("message"));
+        } else {
+            this.cancelAll();
+            return;
+        }
 
         String largeIcon = bundle.getString("largeIcon");
 

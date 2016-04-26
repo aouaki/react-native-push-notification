@@ -73,10 +73,12 @@ Notifications.configure = function(options: Object) {
 		this.callNative( 'addEventListener', [ 'register', this._onRegister.bind(this) ] )
 		this.callNative( 'addEventListener', [ 'notification', this._onNotification.bind(this) ] )
 
-		var tempFirstNotification = this.callNative( 'popInitialNotification' );
+		if ( typeof options.popInitialNotification === 'undefined' || options.popInitialNotification === true ) {
+			var tempFirstNotification = this.callNative( 'popInitialNotification' );
 
-		if ( tempFirstNotification !== null ) {
-			this._onNotification(tempFirstNotification, true);
+			if ( tempFirstNotification !== null ) {
+				this._onNotification(tempFirstNotification, true);
+			}
 		}
 
 		this.loaded = true;
@@ -152,17 +154,25 @@ Notifications._onNotification = function(data, isFromBackground = null) {
 				foreground: ! isFromBackground,
 				message: data.getMessage(),
 				data: data.getData(),
+				badge: data.getBadgeCount(),
+				alert: data.getAlert(),
+				sound: data.getSound()
 			});
 		} else {
-			this.onNotification({
+			var notificationData = {
 				foreground: ! isFromBackground,
-				message: data.message,
-				data: (
-					typeof data.data !== 'undefined'
-					? data.data
-					: {} 
-				),
-			});
+				...data
+			};
+
+			if ( typeof notificationData.data === 'string' ) {
+				try {
+					notificationData.data = JSON.parse(notificationData.data);
+				} catch(e) {
+					/* void */
+				}
+			}
+
+			this.onNotification(notificationData);
 		}
 	}
 };

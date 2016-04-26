@@ -19,7 +19,6 @@ In your `AndroidManifest.xml`
         android:name="${applicationId}.permission.C2D_MESSAGE"
         android:protectionLevel="signature" />
     <uses-permission android:name="${applicationId}.permission.C2D_MESSAGE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application ....>
@@ -51,7 +50,7 @@ In `android/settings.gradle`
 ...
 
 include ':react-native-push-notification'
-project(':react-native-push-notification').projectDir = file('../node_modules/react-native-push-notification/RNPushNotificationAndroid')
+project(':react-native-push-notification').projectDir = file('../node_modules/react-native-push-notification/android')
 ```
 
 In `android/app/build.gradle`
@@ -69,45 +68,55 @@ dependencies {
 Register module (in `MainActivity.java`)
 
 ```java
-import com.dieam.reactnativepushnotification.ReactNativePushNotificationPackage;  // <--- Import
+import android.content.Intent; // <--- Import Intent
+import com.dieam.reactnativepushnotification.ReactNativePushNotificationPackage;  // <--- Import Package
 
 public class MainActivity extends Activity implements DefaultHardwareBackBtnHandler {
-  ......
 
-  private ReactInstanceManager mReactInstanceManager;
-  private ReactRootView mReactRootView;
   private ReactNativePushNotificationPackage mReactNativePushNotificationPackage; // <------ Add Package Variable
 
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    mReactRootView = new ReactRootView(this);
-    mReactNativePushNotificationPackage = new ReactNativePushNotificationPackage(this); // <------ Initialize the Package
+    /**
+     * Returns the name of the main component registered from JavaScript.
+     * This is used to schedule rendering of the component.
+     */
+    @Override
+    protected String getMainComponentName() {
+        return "YOUR_APP_NAME";
+    }
 
-    mReactInstanceManager = ReactInstanceManager.builder()
-      .setApplication(getApplication())
-      .setBundleAssetName("index.android.bundle")
-      .setJSMainModuleName("index.android")
-      .addPackage(new MainReactPackage())
-      .addPackage(mReactNativePushNotificationPackage) // <------ Add the Package
-      .setUseDeveloperSupport(BuildConfig.DEBUG)
-      .setInitialLifecycleState(LifecycleState.RESUMED)
-      .build();
+    /**
+     * Returns whether dev mode should be enabled.
+     * This enables e.g. the dev menu.
+     */
+    @Override
+    protected boolean getUseDeveloperSupport() {
+        return BuildConfig.DEBUG;
+    }
 
-    mReactRootView.startReactApplication(mReactInstanceManager, "ExampleApp", null);
+   /**
+   * A list of packages used by the app. If the app uses additional views
+   * or modules besides the default ones, add more packages here.
+   */
+    @Override
+    protected List<ReactPackage> getPackages() {
+      mReactNativePushNotificationPackage = new ReactNativePushNotificationPackage(this); // <------ Initialize the Package
+      return Arrays.<ReactPackage>asList(
+        new MainReactPackage(),
+        new VectorIconsPackage(),
+        new FabricPackage(),
+        mReactNativePushNotificationPackage // <---- Add the Package
+      );
+    }
 
-    setContentView(mReactRootView);
-  }
+    // Add onNewIntent
+    @Override
+    protected void onNewIntent (Intent intent) {
+      super.onNewIntent(intent);
 
-  // Add onNewIntent
-  @Override
-  protected void onNewIntent (Intent intent) {
-     super.onNewIntent(intent);
+      mReactNativePushNotificationPackage.newIntent(intent);
+    }
 
-     mReactNativePushNotificationPackage.newIntent(intent);
-  }
-  ......
-
+    ....
 }
 ```
 
@@ -136,7 +145,11 @@ PushNotification.configure({
         badge: true,
         sound: true
     },
-    
+
+    // Should the initial notification be popped automatically
+    // default: true
+    popInitialNotification: true,
+
     /**
       * IOS ONLY: (optional) default: true
       * - Specified if permissions will requested or not,
@@ -179,8 +192,8 @@ PushNotification.localNotification({
 
 // IOS ONLY
 PushNotification.localNotificationSchedule({
-	message: "My Notification Message" // (required)
-	date: new Date()
+	message: "My Notification Message", // (required)
+	date: new Date(Date.now() + (60 * 1000)) // in 60 secs
 });
 ```
 
